@@ -4,9 +4,12 @@
  */
 package br.com.manoelbatista.DynamicDataSources.Config;
 
+import br.com.manoelbatista.DynamicDataSources.Exception.DataSourceConfigErrorException;
+import br.com.manoelbatista.DynamicDataSources.Model.Support.DataSetInfo;
 import br.com.manoelbatista.DynamicDataSources.Model.Support.MultiRoutingDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.springframework.context.annotation.Bean;
@@ -28,15 +31,18 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 @EnableJpaRepositories(
         entityManagerFactoryRef = "multiEntityManager",
-        transactionManagerRef = ""
+        transactionManagerRef = "multiTransactionManager",
+        basePackages = "br.com.manoelbatista.DynamicDataSources"
 )
 public class DataConfig {
 
+    protected static final Map<Object, Object> SOURCES = new HashMap<>();
+    private static final MultiRoutingDataSource mrds = new MultiRoutingDataSource();
     //Primary data Source
     @Bean
     public DataSource dataSource() {
         HikariDataSource ds = new HikariDataSource();
-        ds.setJdbcUrl("jdbc:postgresql://127.0.0.1:5432/postgres"); // I have this DB on my localhost
+        ds.setJdbcUrl("jdbc:postgresql://127.0.0.1:5432/test1");
         ds.setDriverClassName("org.postgresql.Driver");
         ds.setUsername("test");
         ds.setPassword("5432");
@@ -46,13 +52,11 @@ public class DataConfig {
 
     @Bean
     public DataSource multiDataSources() {
-        HashMap<Object, Object> dsMap = new HashMap<>();
-        DataSource dataSource = dataSource();
-        dsMap.put("primaryDB", dataSource());
 
-        MultiRoutingDataSource mrds = new MultiRoutingDataSource();
+        DataSource dataSource = dataSource();
+        SOURCES.put("primaryDB", dataSource());        
         mrds.setDefaultTargetDataSource(dataSource);
-        mrds.setTargetDataSources(dsMap);
+        mrds.setTargetDataSources(SOURCES);
         
         return mrds;
     }
@@ -64,12 +68,13 @@ public class DataConfig {
         lcemfb.setPackagesToScan("br.com.manoelbatista.DynamicDataSources.Model.Entity");
         lcemfb.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         lcemfb.setJpaProperties(hibernateProperties());
-        
+
         return lcemfb;
     }
 
     @Bean
     public PlatformTransactionManager multiTransactionManager() {
+        
         return new JpaTransactionManager(multiEntityManager().getObject());
     }
 
@@ -78,7 +83,37 @@ public class DataConfig {
         Properties properties = new Properties();
         properties.put("hibernate.show_sql", true);
         properties.put("hibernate.format_sql", true);
-//        properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
+
         return properties;
     }
+
+    public static boolean KeyExists(String key) {
+        return SOURCES.containsKey(key);
+    }
+
+    /**
+     * this function validate and insert new data source
+     * the AbstractRoutingDataSource.afterPropertiesSet() reload the connections.
+     * @param key
+     * @param dsi 
+     */
+    public static void AddNewDataSource(String key, DataSetInfo dsi) {
+        if (SOURCES.containsKey(key)) {
+            throw new DataSourceConfigErrorException("The data source: %s already exists".formatted(key));
+        }
+
+        if (dsi == null) {
+            throw new DataSourceConfigErrorException("The data source: %s is null".formatted(key));
+        }
+
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(dsi.getUrl());
+        ds.setDriverClassName(dsi.getDriverClass());
+        ds.setUsername(dsi.getUser());
+        ds.setPassword(dsi.getPassword());
+        
+        SOURCES.put(key, ds);
+        mrds.afterPropertiesSet();
+    }
+
 }

@@ -4,6 +4,12 @@
  */
 package br.com.manoelbatista.DynamicDataSources.Model.Entity;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
@@ -12,10 +18,16 @@ import java.time.ZoneId;
  *
  * @author Manoel Batista <manoelbatista902@gmail.com>
  */
+@Entity
 public class Person {
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(name = "first_name")
     private String FirstName;
+    @Column(name = "last_name")
     private String LastName;
+    @Transient
     private Integer age;
     private LocalDate birthday;
 
@@ -25,6 +37,14 @@ public class Person {
     public Person(String FirstName, String LastName) {
         this.FirstName = FirstName;
         this.LastName = LastName;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {

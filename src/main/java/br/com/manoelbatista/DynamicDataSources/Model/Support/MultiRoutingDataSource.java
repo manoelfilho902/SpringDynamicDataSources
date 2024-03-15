@@ -5,6 +5,7 @@
 package br.com.manoelbatista.DynamicDataSources.Model.Support;
 
 import br.com.manoelbatista.DynamicDataSources.Config.DataBaseContextHolder;
+import java.util.logging.Logger;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 /**
@@ -13,6 +14,8 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
  *
  */
 public class MultiRoutingDataSource extends AbstractRoutingDataSource {
+
+    private static final Logger LOG = Logger.getLogger(MultiRoutingDataSource.class.getName());
 
     @Override
     protected Object determineCurrentLookupKey() {

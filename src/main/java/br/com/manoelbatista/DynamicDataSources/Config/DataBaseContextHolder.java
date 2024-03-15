@@ -4,6 +4,8 @@
  */
 package br.com.manoelbatista.DynamicDataSources.Config;
 
+import br.com.manoelbatista.DynamicDataSources.Exception.DataSourceConfigErrorException;
+
 /**
  *
  * @author Manoel Batista <manoelbatista902@gmail.com>
@@ -11,25 +13,30 @@ package br.com.manoelbatista.DynamicDataSources.Config;
 public class DataBaseContextHolder {
 
     private static final ThreadLocal<String> CONTEXT_HOLDER = new ThreadLocal<>(); // string with the dataSource ID ex: primaryLocalDB
- /**
-  * Used by spring data Thead to locate a requested DataSource, in web context 
-  * this have a good potential.
-  * @return 
-  */
+
+    /**
+     * Used by spring data Thead to locate a requested DataSource, in web
+     * context this have a good potential.
+     *
+     * @return
+     */
     public static String getCurrentDataSource() {
         return CONTEXT_HOLDER.get();
     }
+
     /**
      * this method change the data source to actual thead
-     * @param dataSetID 
+     *
+     * @param dataSetID
      */
-    public static void setCurrentDataSource(String dataSetID) {
+    public static void setCurrentDataSource(String dataSetID) throws DataSourceConfigErrorException {
         //validate id
-//        if(){
-//            
-//        }
-        
-        CONTEXT_HOLDER.set(dataSetID);        
+        if (DataConfig.KeyExists(dataSetID) && dataSetID != null) {
+            CONTEXT_HOLDER.set(dataSetID);
+        } else {
+            throw new DataSourceConfigErrorException("The requested data source(%s) not exists!".formatted(dataSetID));
+        }
+
     }
-    
+
 }
